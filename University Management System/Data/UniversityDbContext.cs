@@ -3,7 +3,7 @@ using University_Management_System.Entities;
 
 namespace University_Management_System.Data
 {
-    public class UniversityContext(DbContextOptions<UniversityContext> options) : DbContext(options)
+    public class UniversityDbContext(DbContextOptions<UniversityDbContext> options) : DbContext(options)
     {
         public DbSet<Student> Students { get; set; }
         public DbSet<Faculty> Faculties { get; set; }

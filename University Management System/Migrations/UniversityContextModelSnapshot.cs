@@ -10,7 +10,7 @@ using University_Management_System.Data;
 
 namespace University_Management_System.Migrations
 {
-    [DbContext(typeof(UniversityContext))]
+    [DbContext(typeof(UniversityDbContext))]
     partial class UniversityContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)

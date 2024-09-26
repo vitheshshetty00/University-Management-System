@@ -11,7 +11,7 @@ using University_Management_System.Data;
 
 namespace University_Management_System.Migrations
 {
-    [DbContext(typeof(UniversityContext))]
+    [DbContext(typeof(UniversityDbContext))]
     [Migration("20240926043850_UpdatedMigration")]
     partial class UpdatedMigration
     {

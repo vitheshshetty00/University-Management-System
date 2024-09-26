@@ -11,7 +11,7 @@ using University_Management_System.Data;
 
 namespace University_Management_System.Migrations
 {
-    [DbContext(typeof(UniversityContext))]
+    [DbContext(typeof(UniversityDbContext))]
     [Migration("20240925232901_InitialCreate")]
     partial class InitialCreate
     {
