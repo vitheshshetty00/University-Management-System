@@ -162,93 +162,110 @@ namespace University_Management_System.Services.Implementations
 
         private async Task CalculateStudentFeesAsync()
         {
-            int courseCount = 0;
-            int id = PromptForValidInt("Enter Student ID: ");
-            Student student = await studentService.GetStudentByIdAsync(id);
-            string query = @"Select Count(*) From StudentCourses Where StudentId = @id";
-            SqlConnection connection = await ConnectionManager.GetConnAsync();
             try
             {
-                using (SqlCommand command = new(query, connection))
+                int courseCount = 0;
+                int id = PromptForValidInt("Enter Student ID: ");
+                Student student = await studentService.GetStudentByIdAsync(id);
+                string query = @"Select Count(*) From StudentCourses Where StudentId = @id";
+                SqlConnection connection = await ConnectionManager.GetConnAsync();
+                try
                 {
-                    command.Parameters.AddWithValue("@id", id);
-                    courseCount = (int)await command.ExecuteScalarAsync();
+                    using (SqlCommand command = new(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@id", id);
+                        courseCount = (int)await command.ExecuteScalarAsync();
+                    }
                 }
+                catch (Exception ex)
+                {
+                    logger.LogError(String.Format("An error occurred while Getting Course Count: {0}", ex.Message));
+                }
+                finally
+                {
+                    connection.Close();
+                }
+
+                if (courseCount == 0)
+                {
+                    Console.WriteLine("No courses found for the student.");
+                    return;
+                }
+                else if (courseCount <= 3)
+                {
+                    student = new PartTimeStudent
+                    {
+                        Id = student.Id,
+                        Name = student.Name,
+                        Email = student.Email,
+                        DateOfBirth = student.DateOfBirth,
+                        EnrollmentDate = student.EnrollmentDate,
+                        Address = student.Address,
+                        StudentCourses = student.StudentCourses
+
+                    };
+                }
+                else
+                {
+                    student = new FullTimeStudent
+                    {
+                        Id = student.Id,
+                        Name = student.Name,
+                        Email = student.Email,
+                        DateOfBirth = student.DateOfBirth,
+                        EnrollmentDate = student.EnrollmentDate,
+                        Address = student.Address,
+                        StudentCourses = student.StudentCourses
+                    };
+                }
+                decimal? fee = student?.CalculateFees();
+                student.Fees = fee;
+                await studentService.UpdateStudentAsync(student);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Exception during Calculating Student Fees: {ex.Message}");
+                logger.LogError(String.Format("An error occurred while calculating student fees: {0}", ex.Message));
             }
-            finally
-            {
-                connection.Close();
-            }
-
-            if (courseCount == 0)
-            {
-                Console.WriteLine("No courses found for the student.");
-                return;
-            }
-            else if (courseCount <= 3)
-            {
-                student = new PartTimeStudent
-                {
-                    Id = student.Id,
-                    Name = student.Name,
-                    Email = student.Email,
-                    DateOfBirth = student.DateOfBirth,
-                    EnrollmentDate = student.EnrollmentDate,
-                    Address = student.Address,
-                    StudentCourses = student.StudentCourses
-
-                };
-            }
-            else
-            {
-                student = new FullTimeStudent
-                {
-                    Id = student.Id,
-                    Name = student.Name,
-                    Email = student.Email,
-                    DateOfBirth = student.DateOfBirth,
-                    EnrollmentDate = student.EnrollmentDate,
-                    Address = student.Address,
-                    StudentCourses = student.StudentCourses
-                };
-            }
-            decimal? fee = student?.CalculateFees();
-            student.Fees = fee;
-            await studentService.UpdateStudentAsync(student);
-
 
         }
 
         private async Task DisplayFacultyAsync()
         {
-            var faculties = await facultyService.GetAllFacultiesAsync();
-            //DisplayEntities(faculties);
-
-            Console.WriteLine();
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine($"{"ID",-3}| {"Name",-20}| {"Email",-30}| {"Department",-20}| {"Courses Taught",-30}");
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine(new string('-', 110));
-            foreach (var faculty in faculties)
+            try
             {
-                var courses = faculty.CoursesTaught.Any() ? string.Join(", ", faculty.CoursesTaught.Select(c => c.Name)) : "None";
-                Console.WriteLine($"{faculty.Id,-3}| {faculty.Name,-20}| {faculty.Email,-30}| {faculty.Department,-20}| {courses,-30}");
+                var faculties = await facultyService.GetAllFacultiesAsync();
+                //DisplayEntities(faculties);
+
+                Console.WriteLine();
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine($"{"ID",-3}| {"Name",-20}| {"Email",-30}| {"Department",-20}| {"Courses Taught",-30}");
+                Console.ForegroundColor = ConsoleColor.White;
+                Console.WriteLine(new string('-', 110));
+                foreach (var faculty in faculties)
+                {
+                    var courses = faculty.CoursesTaught.Any() ? string.Join(", ", faculty.CoursesTaught.Select(c => c.Name)) : "None";
+                    Console.WriteLine($"{faculty.Id,-3}| {faculty.Name,-20}| {faculty.Email,-30}| {faculty.Department,-20}| {courses,-30}");
+                }
+
+                Console.WriteLine(new string('-', 110));
+                Console.WriteLine();
             }
-
-            Console.WriteLine(new string('-', 110));
-            Console.WriteLine();
-
-
+            catch (Exception ex)
+            {
+                logger.LogError(String.Format("An error occurred while displaying faculties: {0}", ex.Message));
+            }
         }
-
         private async Task RemoveFacultyAsync()
         {
-            var id = PromptForValidInt("Enter Faculty ID to remove: ");
-            await facultyService.RemoveFacultyAsync(id);
+            try
+            {
+                var id = PromptForValidInt("Enter Faculty ID to remove: ");
+                await facultyService.RemoveFacultyAsync(id);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(String.Format("An error occurred while removing faculty: {0}", ex.Message));
+            }
         }
 
         private async Task AddFacultyAsync()
@@ -331,122 +348,156 @@ namespace University_Management_System.Services.Implementations
 
         private async Task RemoveCourseAsync()
         {
-            var id = PromptForValidInt("Enter Course ID to remove: ");
-            await courseService.DeleteCourseAsync(id);
+            try
+            {
+                var id = PromptForValidInt("Enter Course ID to remove: ");
+                await courseService.DeleteCourseAsync(id);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(String.Format("An error occurred while removing course: {0}", ex.Message));
+            }
         }
 
         private async Task AddCourseAsync()
         {
-            var faculties = await facultyService.GetAllFacultiesAsync();
-            if (faculties == null || !faculties.Any())
+            try
             {
-                Console.WriteLine("No faculties available. Cannot add course.");
-                return;
+                var faculties = await facultyService.GetAllFacultiesAsync();
+                if (faculties == null || !faculties.Any())
+                {
+                    Console.WriteLine("No faculties available. Cannot add course.");
+                    return;
+                }
+                var name = PromptForValidString("Enter Course Name: ");
+                var credits = PromptForValidInt("Enter Credits: ");
+
+                Console.WriteLine("Available Faculties:");
+                foreach (var faculty in faculties)
+                {
+                    Console.WriteLine($"ID: {faculty.Id}, Name: {faculty.Name}");
+                }
+                var facultyId = PromptForValidFacultyId(faculties);
+
+                var course = new Course
+                {
+                    Name = name,
+                    Credits = credits,
+                    FacultyId = facultyId
+                };
+
+                await courseService.AddCourseAsync(course);
+                Console.WriteLine("Course added successfully.");
             }
-            var name = PromptForValidString("Enter Course Name: ");
-            var credits = PromptForValidInt("Enter Credits: ");
-
-            Console.WriteLine("Available Faculties:");
-            foreach (var faculty in faculties)
+            catch (Exception ex)
             {
-                Console.WriteLine($"ID: {faculty.Id}, Name: {faculty.Name}");
+                logger.LogError(String.Format("An error occurred while adding course: {0}", ex.Message));
             }
-            var facultyId = PromptForValidFacultyId(faculties);
 
-            var course = new Course
-            {
-                Name = name,
-                Credits = credits,
-                FacultyId = facultyId
-            };
-
-            await courseService.AddCourseAsync(course);
-            Console.WriteLine("Course added successfully.");
         }
 
         private async Task AddStudentAsync()
         {
-            var courses = await courseService.GetAllCoursesAsync();
-            if (courses == null || !courses.Any())
+            try
             {
-                Console.WriteLine("No courses available. Cannot add student.");
-                return;
-            }
-            var name = PromptForValidString("Enter Name: ", 50);
-            var email = PromtAndValidateEmail("Enter Email: ");
-            var dob = PromptForValidDate("Enter Date of Birth (yyyy-mm-dd): ");
-            var enrollmentDate = PromptForValidDate("Enter Enrollment Date (yyyy-mm-dd): ");
-            var street = PromptForValidString("Enter Street: ", 50);
-            var city = PromptForValidString("Enter City: ", 50);
-            var state = PromptForValidString("Enter State: ", 50);
-            var pinCode = PromptForValidString("Enter PinCode: ", 50);
-
-            var student = new Student
-            {
-                Name = name,
-                Email = email,
-                DateOfBirth = dob,
-                EnrollmentDate = enrollmentDate,
-                Address = new Address
+                var courses = await courseService.GetAllCoursesAsync();
+                if (courses == null || !courses.Any())
                 {
-                    Street = street,
-                    City = city,
-                    State = state,
-                    PinCode = pinCode
-                },
-                Fees = 0
-
-            };
-
-            Console.WriteLine("Available Courses:");
-            foreach (var course in courses)
-            {
-                Console.WriteLine($"ID: {course.Id}, Name: {course.Name}");
-            }
-            while (true)
-            {
-                var courseId = PromptForValidInt("Enter Course ID to assign to student (or 0 to finish): ");
-                if (courseId == 0) break;
-
-                var course = courses.FirstOrDefault(c => c.Id == courseId);
-                if (course != null)
-                {
-                    student.StudentCourses.Add(new StudentCourse { Student = student, Course = course });
+                    Console.WriteLine("No courses available. Cannot add student.");
+                    return;
                 }
-                else
-                {
-                    Console.WriteLine("Invalid Course ID. Please try again.");
-                }
-            }
+                var name = PromptForValidString("Enter Name: ", 50);
+                var email = PromtAndValidateEmail("Enter Email: ");
+                var dob = PromptForValidDate("Enter Date of Birth (yyyy-mm-dd): ");
+                var enrollmentDate = PromptForValidDate("Enter Enrollment Date (yyyy-mm-dd): ");
+                var street = PromptForValidString("Enter Street: ", 50);
+                var city = PromptForValidString("Enter City: ", 50);
+                var state = PromptForValidString("Enter State: ", 50);
+                var pinCode = PromptForValidString("Enter PinCode: ", 50);
 
-            await studentService.AddStudentAsync(student);
-            Console.WriteLine("Student added successfully.");
+                var student = new Student
+                {
+                    Name = name,
+                    Email = email,
+                    DateOfBirth = dob,
+                    EnrollmentDate = enrollmentDate,
+                    Address = new Address
+                    {
+                        Street = street,
+                        City = city,
+                        State = state,
+                        PinCode = pinCode
+                    },
+                    Fees = 0
+
+                };
+
+                Console.WriteLine("Available Courses:");
+                foreach (var course in courses)
+                {
+                    Console.WriteLine($"ID: {course.Id}, Name: {course.Name}");
+                }
+                while (true)
+                {
+                    var courseId = PromptForValidInt("Enter Course ID to assign to student (or 0 to finish): ");
+                    if (courseId == 0) break;
+
+                    var course = courses.FirstOrDefault(c => c.Id == courseId);
+                    if (course != null)
+                    {
+                        student.StudentCourses.Add(new StudentCourse { Student = student, Course = course });
+                    }
+                    else
+                    {
+                        Console.WriteLine("Invalid Course ID. Please try again.");
+                    }
+                }
+
+                await studentService.AddStudentAsync(student);
+                Console.WriteLine("Student added successfully.");
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(String.Format("An error occurred while adding student: {0}", ex.Message));
+            }
         }
         private async Task RemoveStudentAsync()
         {
-            int id = PromptForValidInt("Enter Student ID to remove: ");
-            await studentService.RemoveStudentAsync(id);
+            try
+            {
+                int id = PromptForValidInt("Enter Student ID to remove: ");
+                await studentService.RemoveStudentAsync(id);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(String.Format("An error occurred while removing student: {0}", ex.Message));
+            }
         }
 
         private async Task DisplayStudentsAsync()
         {
 
-            var students = await studentService.GetAllStudentsAsync();
-            //DisplayEntities(students);
-            Console.WriteLine();
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine($"{"ID",-3}| {"Name",-12}| {"Email",-30}| {"Date of Birth",-14}| {"Enrollment Date",-15}| {"Street",-13}| {"City",-10}| {"State",-10}| {"PinCode",-10}");
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine(new string('-', 130));
-
-            foreach (var student in students)
+            try
             {
-                Console.WriteLine($"{student.Id,-3}| {student.Name,-12}| {student.Email,-30}| {student.DateOfBirth.ToShortDateString(),-14}| {student.EnrollmentDate.ToShortDateString(),-15}| {student.Address?.Street,-13}| {student.Address?.City,-10}| {student.Address?.State,-10}| {student.Address?.PinCode,-10}");
+                var students = await studentService.GetAllStudentsAsync();
+                //DisplayEntities(students);
+                Console.WriteLine();
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine($"{"ID",-3}| {"Name",-12}| {"Email",-30}| {"Date of Birth",-14}| {"Enrollment Date",-15}| {"Street",-13}| {"City",-10}| {"State",-10}| {"PinCode",-10}");
+                Console.ForegroundColor = ConsoleColor.White;
+                Console.WriteLine(new string('-', 130));
+
+                foreach (var student in students)
+                {
+                    Console.WriteLine($"{student.Id,-3}| {student.Name,-12}| {student.Email,-30}| {student.DateOfBirth.ToShortDateString(),-14}| {student.EnrollmentDate.ToShortDateString(),-15}| {student.Address?.Street,-13}| {student.Address?.City,-10}| {student.Address?.State,-10}| {student.Address?.PinCode,-10}");
+                }
+                Console.WriteLine(new string('-', 130));
+                Console.WriteLine();
             }
-            Console.WriteLine(new string('-', 130));
-            Console.WriteLine();
-
-
+            catch (Exception ex)
+            {
+                logger.LogError(String.Format("An error occurred while displaying students: {0}", ex.Message));
+            }
         }
         private int PromptForValidFacultyId(List<Faculty> faculties)
         {
