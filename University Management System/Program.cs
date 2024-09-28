@@ -14,7 +14,9 @@ namespace University_Management_System
     {
         static async Task Main(string[] args)
         {
-            var host = Host.CreateDefaultBuilder(args)
+            try
+            {
+                var host = Host.CreateDefaultBuilder(args)
                 .ConfigureServices((context, services) =>
                 {
                     string connectionString = ConfigurationManager.ConnectionStrings["UniversityDbContext"]?.ConnectionString
@@ -53,6 +55,12 @@ namespace University_Management_System
             dbContext.Database.Migrate();
             var menuService = scope.ServiceProvider.GetRequiredService<IMenuService>();
             await menuService.ShowMenuAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(String.Format("An unhandled exception occurred: {0}", ex.Message));
+                Console.WriteLine(ex.StackTrace);
+            }
         }
 
         private static void CreateDatabaseIfNotExists(string connectionString)
