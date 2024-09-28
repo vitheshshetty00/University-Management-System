@@ -98,7 +98,7 @@ namespace University_Management_System.Services
             Console.Write("Enter Student ID to remove: ");
             var id = int.Parse(Console.ReadLine());
             await _studentService.RemoveStudentAsync(id);
-            Console.WriteLine("Student removed successfully.");
+            
         }
 
         private async Task DisplayStudentsAsync()

@@ -1,4 +1,5 @@
 ﻿
+using Microsoft.EntityFrameworkCore;
 using University_Management_System.Data;
 using University_Management_System.Entities;
 using University_Management_System.Exceptions;
@@ -27,28 +28,36 @@ namespace University_Management_System.Services
             }
         }
 
-        public Task<List<Student>> GetAllStudentsAsync()
+        public async Task<List<Student>> GetAllStudentsAsync()
         {
-            List<Student> students = _dbContext.Students.ToList();
-            return Task.FromResult(students);
+            List<Student> students = await _dbContext?.Students?.ToListAsync()
+                ?? throw new StudentNotFoundException("Students Not Found.");
+
+            return students;
         }
 
-        public Task<Student?> GetStudentByIdAsync(int id)
+        public async Task<Student?> GetStudentByIdAsync(int id)
         {
-            throw new NotImplementedException();
+            Student? student = await  (_dbContext?.Students?.FirstOrDefaultAsync(s => s.Id ==id)) ?? throw new StudentNotFoundException($"Student with Id {id} not found.");
+            return  student;
         }
 
         public async Task RemoveStudentAsync(int id)
         {
-            var student = await _dbContext.Students.FindAsync(id);
+            var student =  _dbContext?.Students?.Find(id);
             //Console.WriteLine(student.ToString());
             if (student == null)
             {
                 throw new StudentNotFoundException($"Student with Id {id} not found.");
             }
 
-            _dbContext.Students.Remove(student);
+            _dbContext?.Students.Remove(student);
             await _dbContext.SaveChangesAsync();
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine($"{student.Name}({student.Id}) Has been removed Succesfully");
+            Console.ResetColor();
+
+
         }
     }
 }

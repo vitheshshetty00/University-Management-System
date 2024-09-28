@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace University_Management_System.Exceptions
 {
-    internal class CourseNotFoundException
+    internal class CourseNotFoundException(string? msg):Exception(msg)
     {
     }
 }
