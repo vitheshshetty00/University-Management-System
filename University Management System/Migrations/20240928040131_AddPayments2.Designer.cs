@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using University_Management_System.Data;
 
@@ -11,9 +12,11 @@ using University_Management_System.Data;
 namespace University_Management_System.Migrations
 {
     [DbContext(typeof(UniversityDbContext))]
-    partial class UniversityContextModelSnapshot : ModelSnapshot
+    [Migration("20240928040131_AddPayments2")]
+    partial class AddPayments2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

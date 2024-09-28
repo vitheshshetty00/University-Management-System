@@ -1,34 +1,88 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using System.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
+using Microsoft.EntityFrameworkCore;
 using University_Management_System.Data;
-using University_Management_System.Services;
 using Microsoft.Extensions.Logging;
+using Microsoft.Data.SqlClient;
+using University_Management_System.Services.Implementations;
+using University_Management_System.Services.Interfaces;
 
-var builder = Host.CreateApplicationBuilder(args);
-builder.Configuration.AddUserSecrets<Program>();
-
-IConfiguration config = builder.Configuration;
-
-builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
-builder.Logging.SetMinimumLevel(LogLevel.Warning);
-
-builder.Services.AddDbContext<UniversityDbContext>(options =>
+namespace University_Management_System
 {
-    options.UseSqlServer(config["ConnectionString"] ?? throw new InvalidOperationException("Connection is not found."));
-});
+    class Program
+    {
+        static async Task Main(string[] args)
+        {
+            var host = Host.CreateDefaultBuilder(args)
+                .ConfigureServices((context, services) =>
+                {
+                    string connectionString = ConfigurationManager.ConnectionStrings["UniversityDbContext"]?.ConnectionString
+                              ?? throw new InvalidOperationException("Connection string 'UniversityDbContext' not found.");
 
-builder.Services.AddScoped<IStudentService, StudentService>();
-builder.Services.AddScoped<IMenuService, MenuService>();
+                    CreateDatabaseIfNotExists(connectionString);
 
-var host = builder.Build();
+                    services.AddDbContext<UniversityDbContext>(options =>
+                    {
+                        options.UseSqlServer(connectionString);
+                        options.UseLoggerFactory(LoggerFactory.Create(builder => builder.AddFilter((category, level) =>
+                            category == DbLoggerCategory.Database.Command.Name && level == LogLevel.Debug)));
 
-using (var scope = host.Services.CreateScope())
-{
-    var menuService = scope.ServiceProvider.GetRequiredService<IMenuService>();
-    await menuService.ShowMenuAsync();
+                    });
+
+
+                    services.AddScoped<IStudentService, DbStudentService>();
+                    services.AddScoped<IFacultyService,DbFacultyService>();
+                    services.AddScoped<ICourseService, DbCourseService>();
+                    services.AddScoped<IMenuService, MenuService>();
+                    services.AddScoped<IPaymentService, DbPaymentService>();
+                }).Build();
+
+            var loggerFactory = LoggerFactory.Create(builder =>
+                            builder.AddConsole()
+                            .AddDebug()
+                            .SetMinimumLevel(LogLevel.Debug)
+
+            );
+            var logger = loggerFactory.CreateLogger<Program>();
+
+            logger.LogInformation("Application Started");
+
+            using var scope = host.Services.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<UniversityDbContext>();
+            dbContext.Database.Migrate();
+            var menuService = scope.ServiceProvider.GetRequiredService<IMenuService>();
+            await menuService.ShowMenuAsync();
+        }
+
+        private static void CreateDatabaseIfNotExists(string connectionString)
+        {
+            var builder = new SqlConnectionStringBuilder(connectionString);
+            string databaseName = builder.InitialCatalog;
+
+            builder.InitialCatalog = "master";
+
+            SqlConnection connection = new SqlConnection(builder.ConnectionString);
+            try
+            {
+                connection.Open();
+                using (SqlCommand command = new SqlCommand($"IF DB_ID(N'{databaseName}') IS NULL CREATE DATABASE [{databaseName}]", connection))
+                {
+                    command.ExecuteNonQuery();
+                }
+            }
+            catch (SqlException ex)
+            {
+                Console.WriteLine($"SQL Exception : {ex}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred while creating the database: {ex.Message}");
+            }
+            finally
+            {
+                connection.Close();
+            }
+        }
+    }
 }
-
-

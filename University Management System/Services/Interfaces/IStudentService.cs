@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using University_Management_System.Entities;
 
-namespace University_Management_System.Services
+namespace University_Management_System.Services.Interfaces
 {
     public interface IStudentService
     {
@@ -13,5 +13,6 @@ namespace University_Management_System.Services
         Task RemoveStudentAsync(int id);
         Task<List<Student>> GetAllStudentsAsync();
         Task<Student?> GetStudentByIdAsync(int id);
+        Task UpdateStudentAsync(Student student);
     }
 }

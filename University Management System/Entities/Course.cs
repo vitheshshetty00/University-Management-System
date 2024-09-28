@@ -22,5 +22,6 @@ namespace University_Management_System.Entities
         public int FacultyId { get; set; }
 
         public Faculty? Faculty { get; set; }
+        public ICollection<StudentCourse> StudentCourses { get; set; } = new List<StudentCourse>();
     }
 }
